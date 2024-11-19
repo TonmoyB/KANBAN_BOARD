@@ -1,0 +1,136 @@
+body {
+    background-color: #BCD2E8;
+    overflow: hidden;
+}
+
+.mainContainer {
+    background-color: #F5F5F5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+    border-radius: 100px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, .5);
+    margin-top: 1%;
+}
+
+.mainContainer p {
+    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    font-style: italic;
+    font-size: 50px;
+}
+
+.addColumnBtn {
+    border-radius: 20px;
+    height: 27px;
+    width: 150px;
+    font-size: large;
+    text-align: center;
+    cursor: pointer;
+}
+
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    background-color: white;
+    padding: 20px;
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+}
+
+.modalContent {
+    text-align: center;
+}
+
+.modal input {
+    width: 80%;
+    padding: 10px;
+    margin: 15px 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.modalButtons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.modalBtn {
+    border: none;
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.modalBtn:hover {
+    background-color: #45a049;
+}
+
+.hidden {
+    display: none;
+}
+
+.taskColumns {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    margin: 20px;
+    justify-content: center;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+}
+
+.taskColumns::-webkit-scrollbar {
+    height: 5px;
+}
+
+.taskColumns::-webkit-scrollbar-thumb {
+    background-color: #888;
+    border-radius: 10px;
+}
+
+.taskColumns:hover {
+    cursor: grab;
+}
+
+.taskColumn {
+    background-color: #E8EAF6;
+    border-radius: 10px;
+    padding: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, .2);
+    min-width: 150px;
+    text-align: center;
+    position: relative;
+    scroll-snap-align: start;
+    cursor: grab;
+}
+
+.taskColumn h4 {
+    font-family: Arial, sans-serif;
+    color: #333;
+}
+
+.deleteBtn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: red;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 12px;
+}
+
+.taskColumn.dragging {
+    opacity: 0.5;
+}
