@@ -1,0 +1,16 @@
+.card {
+    background-color: #fff;
+    padding: 10px;
+    margin: 10px 0;
+    box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+    cursor: grab;
+}
+
+.card.dragging {
+    opacity: 0.5;
+}
+
+.taskColumn.dragging {
+    opacity: 0.5;
+}

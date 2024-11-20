@@ -6,25 +6,30 @@ const addColumnSubmit = document.getElementById("addColumnSubmit");
 const columnTitleInput = document.getElementById("columnTitle");
 const taskColumns = document.getElementById("taskColumns");
 
+const addCardModal = document.getElementById("addCardModal");
+const closeCardModal = document.getElementById("closeCardModal");
+const addCardSubmit = document.getElementById("addCardSubmit");
+const cardTitleInput = document.getElementById("cardTitle");
+const cardDetailsInput = document.getElementById("cardDetails");
+
 let draggedColumn = null;
+let draggedCard = null;
+let currentColumn = null;
 
-// Show the modal and overlay when "ADD STATUS" is clicked
-addColumnBtn.addEventListener("click", () => {
-    modal.classList.remove("hidden");
-    overlay.style.display = "block";
-    columnTitleInput.value = ""; // Reset input field
-});
-
-// Close modal and hide overlay
 const closeModalAndOverlay = () => {
     modal.classList.add("hidden");
     overlay.style.display = "none";
 };
 
+addColumnBtn.addEventListener("click", () => {
+    modal.classList.remove("hidden");
+    overlay.style.display = "block";
+    columnTitleInput.value = "";
+});
+
 closeModal.addEventListener("click", closeModalAndOverlay);
 overlay.addEventListener("click", closeModalAndOverlay);
 
-// Add new column and close the modal
 addColumnSubmit.addEventListener("click", () => {
     const title = columnTitleInput.value.trim();
 
@@ -38,25 +43,30 @@ addColumnSubmit.addEventListener("click", () => {
     columnDiv.className = "taskColumn";
     columnDiv.draggable = true;
     columnDiv.innerHTML = `
-        <h2>${title}</h2>
-        <button class="deleteBtn"> 
-            <i class="fas fa-times" style="color: black;"></i> 
+        <h4>${title}</h4>
+        <button class="deleteBtn">
+            <i class="fas fa-times" style="color: black;"></i>
         </button>
+        <button class="addCardBtn">+ Add Card</button>
+        <div class="cardsContainer"></div>
     `;
 
     columnDiv.querySelector(".deleteBtn").addEventListener("click", () => {
         columnDiv.remove();
     });
 
-    // Add drag-and-drop event listeners
+    columnDiv.querySelector(".addCardBtn").addEventListener("click", () => {
+        currentColumn = columnDiv;
+        addCardModal.classList.remove("hidden");
+        overlay.style.display = "block";
+    });
+
     addDragAndDropListeners(columnDiv);
-
     taskColumns.appendChild(columnDiv);
-
     closeModalAndOverlay();
 });
 
-// Drag-and-Drop Handlers
+// Drag-and-Drop for Columns
 function addDragAndDropListeners(column) {
     column.addEventListener("dragstart", () => {
         draggedColumn = column;
@@ -72,9 +82,9 @@ function addDragAndDropListeners(column) {
         e.preventDefault();
         const afterElement = getDragAfterElement(taskColumns, e.clientX);
         if (afterElement == null) {
-            taskColumns.appendChild(draggedColumn);
+            taskColumns.appendChild(draggedColumn); // Append at the end
         } else {
-            taskColumns.insertBefore(draggedColumn, afterElement);
+            taskColumns.insertBefore(draggedColumn, afterElement); // Insert before the element at the current position
         }
     });
 }
@@ -82,15 +92,15 @@ function addDragAndDropListeners(column) {
 // Determine the position to place the dragged element
 function getDragAfterElement(container, x) {
     const draggableElements = [
-        ...container.querySelectorAll(".taskColumn:not(.dragging)"),
+        ...container.querySelectorAll(".taskColumn:not(.dragging)"), // Only get non-dragging columns
     ];
 
     return draggableElements.reduce(
         (closest, child) => {
             const box = child.getBoundingClientRect();
-            const offset = x - box.left - box.width / 2;
+            const offset = x - box.left - box.width / 2; // Calculate horizontal offset
             if (offset < 0 && offset > closest.offset) {
-                return { offset, element: child };
+                return { offset, element: child }; // Return closest column to where the drag is happening
             } else {
                 return closest;
             }
