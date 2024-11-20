@@ -6,26 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KANBAN BOARD</title>
     <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+
 </head>
 
 <body>
-
     <div class="mainContainer">
-        <p> KANBAN BOARD </p>
+        <p>KANBAN BOARD</p>
         <button id="addColumnBtn" class="addColumnBtn">ADD STATUS</button>
     </div>
 
+    <div id="overlay" class="overlay"></div>
     <div id="modal" class="modal hidden">
         <div class="modalContent">
-            <h3>Add New Column</h3>
-            <input type="text" id="columnTitle" placeholder="Enter column title">
+            <input type="text" id="columnTitle" placeholder="Enter Title..." required>
             <div class="modalButtons">
-                <button id="addColumnSubmit" class="modalBtn">Add</button>
-                <button id="closeModal" class="modalBtn">Cancel</button>
+                <button id="addColumnSubmit" class="modalBtn">✔️</button>
+                <button id="closeModal" class="modalBtn">❌</button>
             </div>
         </div>
     </div>
-
     <div class="taskColumns" id="taskColumns"></div>
 
     <script src="script.js"></script>
