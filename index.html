@@ -32,13 +32,15 @@
         </div>
     </div>
 
-    <div id="addCardModal" class="modal hidden">
+    <div id="cardEditModal" class="modal hidden">
         <div class="modalContent">
-            <input type="text" id="cardTitle" placeholder="Card Title..." required>
-            <textarea id="cardDetails" placeholder="Card Details..." rows="4" required></textarea>
+            <label for="editCardTitle">Card Title:</label>
+            <input type="text" id="editCardTitle" placeholder="Edit Card Title" required>
+            <label for="editCardDetails">Card Details:</label>
+            <textarea id="editCardDetails" placeholder="Edit Card Details" rows="3" required></textarea>
             <div class="modalButtons">
-                <button id="addCardSubmit" class="modalBtn">✔️</button>
-                <button id="closeCardModal" class="modalBtn">❌</button>
+                <button id="saveCardEdit" class="modalBtn">✔️</button>
+                <button id="closeCardEdit" class="modalBtn">❌</button>
             </div>
         </div>
     </div>
