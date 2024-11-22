@@ -4,36 +4,51 @@
     padding: 20px;
     margin: 20px;
     justify-content: flex-start;
+    align-items: flex-start;
     overflow: auto;
-    scroll-snap-type: x mandatory;
-}
-
-.taskColumns::-webkit-scrollbar {
-    height: max-content;
-}
-
-.taskColumns::-webkit-scrollbar-thumb {
-    background-color: #888;
-    border-radius: 15px;
 }
 
 .taskColumn {
     background-color: #E8EAF6;
     border-radius: 15px;
     padding: 15px;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, .5);
-    min-width: 200px;
+    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
+    min-width: 300px;
+    max-height: 75vh;
     position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    overflow-y: auto;
     scroll-snap-align: start;
-    width: 380px;
     cursor: pointer;
+    transition: transform 0.3s ease;
 }
 
-.taskColumn p {
+.tasksColumn.dragging {
+    opacity: 0.5;
+    transform: scale(1.05);
+    transition: transform 0.2s ease;
+}
+
+.taskColumn:hover {
+    transform: scale(1.02);
+}
+
+.taskColumn .editableTitle {
     font-family: Arial, sans-serif;
     color: #333;
-    font-size: 30px;
-    height: min-content;
+    font-size: 25px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    cursor: text;
+    padding: 5px;
+}
+
+.taskColumn .editableTitle:focus {
+    outline: none;
+    border: 1px solid;
+    background-color: #f0f8ff;
 }
 
 .deleteBtn {
@@ -44,6 +59,36 @@
     color: black;
     padding: 5px 10px;
     cursor: pointer;
-    border-radius: 5px;
+    border-radius: 20px;
     font-size: 15px;
+    background: #f5f5f5;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s ease;
+}
+
+.deleteBtn:hover {
+    background-color: #e57373;
+}
+
+.addCardBtn {
+    display: block;
+    margin: 10px auto 0;
+    padding: 10px 15px;
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    background-color: #3f51b5;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.addCardBtn:hover {
+    background-color: #303f9f;
+    transform: translateY(-2px);
+}
+
+.addCardBtn:active {
+    background-color: #1a237e;
+    transform: translateY(0);
 }
