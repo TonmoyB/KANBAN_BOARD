@@ -278,6 +278,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Close modal
     closeModal.addEventListener("click", closeModalAndOverlay);
     overlay.addEventListener("click", closeModalAndOverlay);
+    closeCardEditBtn.addEventListener("click", closeModalAndOverlay);
 
     // Add a new column when the submit button is clicked
     addColumnSubmit.addEventListener("click", () => {
