@@ -2,6 +2,7 @@ body {
     background-color: #BCD2E8;
     overflow: hidden;
     height: 100vh;
+    margin: 0;
 }
 
 .mainContainer {
@@ -13,20 +14,23 @@ body {
     border-radius: 100px;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, .5);
     margin-top: 1%;
-    height: 10%;
+    padding: 20px;
+    height: auto;
+    flex-wrap: wrap;
 }
 
 .mainContainer p {
     font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
     font-style: italic;
-    font-size: 50px;
+    font-size: 5vw;
 }
+
 
 .addColumnBtn {
     border-radius: 20px;
-    height: 27px;
-    width: 150px;
-    font-size: large;
+    height: 3rem;
+    width: 50%;
+    font-size: 1rem;
     text-align: center;
     cursor: pointer;
 }
