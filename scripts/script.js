@@ -71,12 +71,15 @@ document.addEventListener("DOMContentLoaded", () => {
             if (cardTitle && cardTitle.trim()) {
                 const cardDetails = prompt("Enter card details:");
                 if (cardDetails && cardDetails.trim()) {
-                    const cardObj = { cardTitle, cardDetails, assignedPerson: "NONE" };
-                    const cardDiv = createCard(cardObj);
+                    const assignedPerson = prompt("Enter member name:");
+                    if (cardDetails && cardDetails.trim()) {
+                        const cardObj = { cardTitle, cardDetails, assignedPerson };
+                        const cardDiv = createCard(cardObj);
 
-                    columnDiv.querySelector(".cardsContainer").appendChild(cardDiv);
-                    addCardDragAndDropListeners(cardDiv);
-                    saveCardToLocalStorage(cardObj, title);
+                        columnDiv.querySelector(".cardsContainer").appendChild(cardDiv);
+                        addCardDragAndDropListeners(cardDiv);
+                        saveCardToLocalStorage(cardObj, title);
+                    }
                 }
             }
         });
@@ -106,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const cardTitle = draggingCard.querySelector("p").innerText.trim();
             const cardDetails = draggingCard.getAttribute("data-details");
-            const assignedPerson = draggingCard.getAttribute("data-assigned-person") || "";
+            const assignedPerson = draggingCard.getAttribute("data-assigned-person");
 
             const cardObj = { cardTitle, cardDetails, assignedPerson };
 
@@ -118,7 +121,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             if (prevColumnTitle && prevColumnTitle !== newColumnTitle) {
-                console.log("Deleting card from previous column:", prevColumnTitle);
                 deleteCardFromLocalStorage(cardObj, prevColumnTitle);
             }
 
@@ -192,7 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
             populateAssignPersonDropdown();
             dropdown.value = cardObj.assignedPerson || "";
 
-            if (cardObj.assignedPerson && cardObj.assignedPerson !== "NONE") {
+            if (cardObj.assignedPerson && cardObj.assignedPerson !== null) {
                 assignedPersonDisplay.textContent = cardObj.assignedPerson;
                 dropdown.style.display = "none";
             } else {
@@ -202,6 +204,7 @@ document.addEventListener("DOMContentLoaded", () => {
             assignedPersonDisplay.style.display = "block";
 
             assignedPersonDisplay.addEventListener("click", () => {
+                assignedPersonDisplay.style.display = "none";
                 dropdown.style.display = "block";
             });
 
@@ -209,6 +212,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const assignedPerson = dropdown.value.trim();
                 assignedPersonDisplay.textContent = assignedPerson || "Unassigned";
                 dropdown.style.display = "none";
+                assignedPersonDisplay.style.display = "block";
 
                 cardObj.assignedPerson = assignedPerson;
             });
@@ -256,7 +260,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const cards = [...columnDiv.querySelectorAll(".card")].map(card => {
             const title = card.querySelector("p").innerText.trim();
             const details = card.getAttribute("data-details");
-            return { cardTitle: title, cardDetails: details };
+            const assignedPersonName = card.getAttribute("data-assigned-person")
+            return { cardTitle: title, cardDetails: details, assignedPerson: assignedPersonName };
         });
 
         const storedColumns = JSON.parse(localStorage.getItem("columns")) || [];
@@ -335,14 +340,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const updatedTitle = editCardTitleInput.value.trim();
         const updatedDetails = quill.root.innerHTML.trim();
         const dropdown = document.getElementById("assignPersonDropdown");
-        const assignedPerson = dropdown.value.trim();
+        const assignedPersonDisplay = document.getElementById("assignedPersonDisplay");
 
+        const assignedPerson = dropdown.value.trim();
         if (assignedPerson) {
-            const assignedPersonDisplay = document.getElementById("assignedPersonDisplay");
             assignedPersonDisplay.textContent = assignedPerson;
-            dropdown.style.display = "none";
-            assignedPersonDisplay.style.display = "block";
+        } else {
+            assignedPersonDisplay.textContent = "Unassigned";
         }
+
+        dropdown.style.display = "none";
+        assignedPersonDisplay.style.display = "block";
+
         const textContent = updatedDetails.replace(/<[^>]*>/g, '').trim();
 
         if (!updatedTitle || !textContent) {
@@ -365,6 +374,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     column.cards[cardIndex].cardTitle = updatedTitle;
                     column.cards[cardIndex].cardDetails = updatedDetails;
                     column.cards[cardIndex].assignedPerson = assignedPerson;
+
                     localStorage.setItem("columns", JSON.stringify(storedColumns));
                     loadColumnsFromLocalStorage();
                 }
@@ -373,6 +383,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         closeModalAndOverlay();
     });
+
 
     closeCardEditBtn.addEventListener("click", closeModalAndOverlay);
     loadColumnsFromLocalStorage();
