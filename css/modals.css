@@ -19,6 +19,7 @@
     box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.5);
     border-radius: 20px;
     z-index: 5;
+    width: 400px;
 }
 
 .modalContent {
@@ -26,20 +27,59 @@
 }
 
 .modal input,
-.modal textarea {
+.modal textarea,
+#assignedPersonDisplay {
     padding: 10px;
     margin-top: 10px;
     margin-bottom: 20px;
     border: 3px solid #ddd;
     border-radius: 50px;
-    font-size: 20px;
+    font-size: 24px;
     width: 90%;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+#assignedPersonDisplay {
+    text-align: center;
+    margin: 20px;
+    cursor: pointer;
+}
+
+#editCardDetails {
+    margin: 20px;
+}
+
+.ql-toolbar {
+    margin-top: 10px;
+}
+
+.ql-editor {
+    font-size: 20px;
+    text-align: center;
+}
+
+#editCardDetails {
+    resize: none;
+}
+
+#editCardDetails.ql-container.ql-snow {
+    padding: 10px;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    border: 3px solid #ddd;
+    border-radius: 50px;
+}
+
+.modal textarea {
+    resize: none;
+    height: 100px;
 }
 
 .modalButtons {
     display: flex;
     justify-content: center;
-    gap: 20px;
+    gap: 30px;
 }
 
 .modalBtn {
@@ -48,8 +88,22 @@
     cursor: pointer;
     font-size: 20px;
     background-color: white;
+    border-radius: 50px;
+}
+
+.modalBtn:hover {
+    background-color: #f0f0f0;
 }
 
 .hidden {
     display: none;
+}
+
+.modal label {
+    display: block;
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-align: left;
+    color: #333;
 }

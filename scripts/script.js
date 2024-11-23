@@ -12,22 +12,32 @@ document.addEventListener("DOMContentLoaded", () => {
     const saveCardEditBtn = document.getElementById("saveCardEdit");
     const closeCardEditBtn = document.getElementById("closeCardEdit");
 
-    let draggedColumn = null;
-    let currentCard = null;
-    let ColumnTitle = null;
+    let currentCardElement = null;
+    let editColumnTitle = null;
+    let prevColumnTitle = null;
+    let quill = null;
 
-    // Helper: Close modals and overlay
     const closeModalAndOverlay = () => {
         modal.classList.add("hidden");
         overlay.style.display = "none";
         cardEditModal.classList.add("hidden");
     };
 
-    // Helper: Create a new column
+    function initializeQuill(content = '') {
+        if (quill) {
+            quill.root.innerHTML = content;
+        } else {
+            quill = new Quill(editCardDetailsInput, {
+                theme: 'snow',
+                placeholder: 'Edit the details of the card...',
+            });
+            quill.root.innerHTML = content;
+        }
+    }
+
     function createColumn(title = "New Column") {
         const columnDiv = document.createElement("div");
         columnDiv.className = "taskColumn";
-        columnDiv.draggable = true;
         columnDiv.innerHTML = `
             <p contenteditable="true" class="editableTitle">${title}</p>
             <button class="deleteBtn"><i class="fas fa-times" style="color: black;"></i></button>
@@ -35,169 +45,101 @@ document.addEventListener("DOMContentLoaded", () => {
             <button class="addCardBtn"> Add Card </button>
         `;
 
-        // Delete Column Button Logic
         columnDiv.querySelector(".deleteBtn").addEventListener("click", () => {
             const confirmDeletion = confirm("Sure to Delete???");
             if (confirmDeletion) {
                 deleteColumnFromLocalStorage(title);
                 columnDiv.remove();
-                updateColumnOrderInLocalStorage();
             }
         });
 
-        // Column title update logic
         const titleElement = columnDiv.querySelector(".editableTitle");
         titleElement.addEventListener("blur", () => {
             const updatedTitle = titleElement.innerText.trim();
             if (!updatedTitle) {
                 alert("Column title cannot be empty!");
-                titleElement.innerText = title; // Revert to the original title
+                titleElement.innerText = title;
                 return;
             }
             updateColumnTitleInLocalStorage(title, updatedTitle);
-            title = updatedTitle; // Update title reference
+            title = updatedTitle;
         });
 
-        // Add Card Button Logic
         const addCardBtn = columnDiv.querySelector(".addCardBtn");
         addCardBtn.addEventListener("click", () => {
             const cardTitle = prompt("Enter card title:");
             if (cardTitle && cardTitle.trim()) {
                 const cardDetails = prompt("Enter card details:");
                 if (cardDetails && cardDetails.trim()) {
-                    const cardObj = { cardTitle, cardDetails };
+                    const cardObj = { cardTitle, cardDetails, assignedPerson: "NONE" };
                     const cardDiv = createCard(cardObj);
 
-                    // Append card to the column
                     columnDiv.querySelector(".cardsContainer").appendChild(cardDiv);
-
-                    // Save card in local storage
+                    addCardDragAndDropListeners(cardDiv);
                     saveCardToLocalStorage(cardObj, title);
                 }
             }
         });
 
-        // Add Drag and Drop functionality
-        addColumnDragAndDropListeners(columnDiv);
-        taskColumns.appendChild(columnDiv);
+        columnDiv.addEventListener("dragover", (e) => {
+            e.preventDefault();
 
-        // Save column to local storage
+            const container = columnDiv.querySelector(".cardsContainer");
+            const afterElement = getCardDragAfterElement(container, e.clientY);
+            const draggingCard = document.querySelector(".dragging");
+
+            if (afterElement == null) {
+                container.appendChild(draggingCard);
+            } else {
+                container.insertBefore(draggingCard, afterElement);
+            }
+        });
+
+        columnDiv.addEventListener("drop", (e) => {
+            e.preventDefault();
+
+            const container = columnDiv.querySelector(".cardsContainer");
+            const draggingCard = document.querySelector(".dragging");
+
+            const newColumnTitle = columnDiv.querySelector(".editableTitle").innerText.trim();
+
+
+            const cardTitle = draggingCard.querySelector("p").innerText.trim();
+            const cardDetails = draggingCard.getAttribute("data-details");
+            const assignedPerson = draggingCard.getAttribute("data-assigned-person") || "";
+
+            const cardObj = { cardTitle, cardDetails, assignedPerson };
+
+            const afterElement = getCardDragAfterElement(container, e.clientY);
+            if (afterElement == null) {
+                container.appendChild(draggingCard);
+            } else {
+                container.insertBefore(draggingCard, afterElement);
+            }
+
+            if (prevColumnTitle && prevColumnTitle !== newColumnTitle) {
+                console.log("Deleting card from previous column:", prevColumnTitle);
+                deleteCardFromLocalStorage(cardObj, prevColumnTitle);
+            }
+
+            saveCardToLocalStorage(cardObj, newColumnTitle);
+            draggingCard.setAttribute("data-details", cardDetails);
+            draggingCard.setAttribute("data-assigned-person", assignedPerson);
+
+            updateCardOrderInLocalStorage(newColumnTitle);
+        });
+
+        taskColumns.appendChild(columnDiv);
         saveColumnToLocalStorage(title);
         return columnDiv;
     }
 
-    // Save a new column to local storage
-    function saveColumnToLocalStorage(title) {
+    function deleteColumnFromLocalStorage(columnTitle) {
         const storedColumns = JSON.parse(localStorage.getItem("columns")) || [];
-        if (!storedColumns.some(column => column.title === title)) {
-            storedColumns.push({ title, cards: [] });
-            localStorage.setItem("columns", JSON.stringify(storedColumns));
-        }
+        const updatedColumns = storedColumns.filter(col => col.title !== columnTitle);
+        localStorage.setItem("columns", JSON.stringify(updatedColumns));
     }
 
-    // Save a card to a specific column in local storage
-    function saveCardToLocalStorage(card, columnTitle) {
-        const storedColumns = JSON.parse(localStorage.getItem("columns")) || [];
-        const column = storedColumns.find(col => col.title === columnTitle);
-        if (column) {
-            column.cards.push(card);
-            localStorage.setItem("columns", JSON.stringify(storedColumns));
-        }
-    }
-
-    // Load columns and cards from local storage
-    function loadColumnsFromLocalStorage() {
-        const storedColumns = JSON.parse(localStorage.getItem("columns")) || [];
-
-        storedColumns.forEach(column => {
-            const columnDiv = createColumn(column.title);
-            column.cards.forEach(card => {
-                const cardDiv = createCard(card);
-                columnDiv.querySelector(".cardsContainer").appendChild(cardDiv);
-            });
-        });
-    }
-
-    // Add the event listener for saveCardEditBtn outside of createCard function
-    saveCardEditBtn.addEventListener("click", () => {
-        const newCardTitle = editCardTitleInput.value.trim();
-        const newCardDetails = editCardDetailsInput.value.trim();
-
-        if (!newCardTitle || !newCardDetails) {
-            alert("Both title and details are required!");
-            return;
-        }
-
-        // Find the column using ColumnTitle
-        const storedColumns = JSON.parse(localStorage.getItem("columns")) || [];
-        const columnDivIndex = storedColumns.findIndex(col => col.title === ColumnTitle);
-
-        if (columnDivIndex !== -1) {
-            // Find the card inside the column by matching the cardTitle
-            const card = storedColumns[columnDivIndex].cards.find(card => card.cardTitle === currentCard.cardTitle);
-
-            if (card) {
-                // Update the card's title and details
-                card.cardTitle = newCardTitle;
-                card.cardDetails = newCardDetails;
-
-                // Save the updated columns array to localStorage
-                localStorage.setItem("columns", JSON.stringify(storedColumns));
-
-                // Update the card in the DOM
-                const cardDiv = [...taskColumns.querySelectorAll(".card")].find(card => card.querySelector("p").innerText === currentCard.cardTitle);
-                if (cardDiv) {
-                    cardDiv.querySelector("p").innerText = newCardTitle; // Update the card title in the DOM
-                }
-            }
-        }
-        closeModalAndOverlay(); // Close modal after saving
-    });
-
-    // Create card function
-    function createCard(cardObj) {
-        const cardDiv = document.createElement("div");
-        cardDiv.className = "card";
-        cardDiv.innerHTML = `
-        <button class="cardDeleteBtn"><i class="fas fa-times" style="color: black;"></i></button>
-        <button class="cardEditBtn"><i class="fas fa-edit" style="color: black;"></i></button>
-        <p>${cardObj.cardTitle}</p>
-        `;
-
-        // Delete card logic
-        cardDiv.querySelector(".cardDeleteBtn").addEventListener("click", () => {
-            const confirmDeletion = confirm("Are you sure you want to delete this card?");
-            if (confirmDeletion) {
-                const columnTitle = cardDiv.closest(".taskColumn").querySelector(".editableTitle").innerText.trim();
-                deleteCardFromLocalStorage(cardObj, columnTitle);
-                cardDiv.remove();
-            }
-        });
-
-        const editBtn = cardDiv.querySelector(".cardEditBtn");
-        editBtn.addEventListener("click", () => {
-            currentCard = cardObj; // Set the current card as the card being edited
-            ColumnTitle = cardDiv.closest(".taskColumn").querySelector(".editableTitle").innerText.trim();
-            editCardTitleInput.value = cardObj.cardTitle;
-            editCardDetailsInput.value = cardObj.cardDetails;
-            cardEditModal.classList.remove("hidden"); // Show modal
-            overlay.style.display = "block"; // Show overlay
-        });
-
-        return cardDiv;
-    }
-
-    // Delete a card from local storage
-    function deleteCardFromLocalStorage(cardObj, columnTitle) {
-        const storedColumns = JSON.parse(localStorage.getItem("columns")) || [];
-        const column = storedColumns.find(col => col.title === columnTitle);
-        if (column) {
-            column.cards = column.cards.filter(card => card.cardTitle !== cardObj.cardTitle);
-            localStorage.setItem("columns", JSON.stringify(storedColumns));
-        }
-    }
-
-    // Update column title in local storage
     function updateColumnTitleInLocalStorage(oldTitle, newTitle) {
         const storedColumns = JSON.parse(localStorage.getItem("columns")) || [];
         const column = storedColumns.find(col => col.title === oldTitle);
@@ -207,54 +149,130 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Delete column from local storage
-    function deleteColumnFromLocalStorage(title) {
+    function saveColumnToLocalStorage(title) {
         const storedColumns = JSON.parse(localStorage.getItem("columns")) || [];
-        const updatedColumns = storedColumns.filter(col => col.title !== title);
-        localStorage.setItem("columns", JSON.stringify(updatedColumns));
+        if (!storedColumns.some(column => column.title === title)) {
+            storedColumns.push({ title, cards: [] });
+            localStorage.setItem("columns", JSON.stringify(storedColumns));
+        }
     }
 
-    // Drag-and-Drop Listeners for Columns
-    function addColumnDragAndDropListeners(column) {
-        column.addEventListener("dragstart", () => {
-            draggedColumn = column;
-            column.classList.add("dragging");
-        });
+    function createCard(cardObj) {
+        const cardDiv = document.createElement("div");
+        cardDiv.className = "card";
+        cardDiv.setAttribute("data-details", cardObj.cardDetails);
+        cardDiv.setAttribute("data-assigned-person", cardObj.assignedPerson || "");
 
-        column.addEventListener("dragend", () => {
-            draggedColumn = null;
-            column.classList.remove("dragging");
-            updateColumnOrderInLocalStorage(); // Update order in local storage
-        });
+        cardDiv.innerHTML = `
+            <button class="cardDeleteBtn"><i class="fas fa-times" style="color: black;"></i></button>
+            <p>${cardObj.cardTitle}</p>
+        `;
 
-        taskColumns.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            const afterElement = getColumnDragAfterElement(taskColumns, e.clientX);
-            if (afterElement == null) {
-                taskColumns.appendChild(draggedColumn);
-            } else {
-                taskColumns.insertBefore(draggedColumn, afterElement);
+        cardDiv.querySelector(".cardDeleteBtn").addEventListener("click", (e) => {
+            e.stopPropagation();
+            const confirmDeletion = confirm("Are you sure you want to delete this card?");
+            if (confirmDeletion) {
+                const columnTitle = cardDiv.closest(".taskColumn").querySelector(".editableTitle").innerText.trim();
+                deleteCardFromLocalStorage(cardObj, columnTitle);
+                cardDiv.remove();
             }
         });
-    }
 
-    // Update column order in local storage
-    function updateColumnOrderInLocalStorage() {
-        const updatedColumns = [...taskColumns.querySelectorAll(".taskColumn")].map(column => {
-            const title = column.querySelector(".editableTitle").innerText.trim();
-            const cards = JSON.parse(localStorage.getItem("columns")).find(col => col.title === title).cards;
-            return { title, cards };
+        cardDiv.addEventListener("click", () => {
+            currentCardElement = cardObj;
+            editColumnTitle = cardDiv.closest(".taskColumn").querySelector(".editableTitle").innerText.trim();
+            editCardTitleInput.value = cardObj.cardTitle;
+            initializeQuill(cardObj.cardDetails);
+            cardEditModal.classList.remove("hidden");
+            overlay.style.display = "block";
+
+            const assignedPersonDisplay = document.getElementById("assignedPersonDisplay");
+            const dropdown = document.getElementById("assignPersonDropdown");
+
+            populateAssignPersonDropdown();
+            dropdown.value = cardObj.assignedPerson || "";
+
+            if (cardObj.assignedPerson && cardObj.assignedPerson !== "NONE") {
+                assignedPersonDisplay.textContent = cardObj.assignedPerson;
+                dropdown.style.display = "none";
+            } else {
+                assignedPersonDisplay.textContent = "Unassigned";
+            }
+
+            assignedPersonDisplay.style.display = "block";
+
+            assignedPersonDisplay.addEventListener("click", () => {
+                dropdown.style.display = "block";
+            });
+
+            dropdown.addEventListener("change", () => {
+                const assignedPerson = dropdown.value.trim();
+                assignedPersonDisplay.textContent = assignedPerson || "Unassigned";
+                dropdown.style.display = "none";
+
+                cardObj.assignedPerson = assignedPerson;
+            });
         });
-        localStorage.setItem("columns", JSON.stringify(updatedColumns));
+
+        return cardDiv;
     }
 
-    // Helper: Get the column after the current dragged column
-    function getColumnDragAfterElement(container, xPosition) {
-        const draggableElements = [...container.querySelectorAll(".taskColumn:not(.dragging)")];
-        return draggableElements.reduce(
+    function deleteCardFromLocalStorage(cardObj, columnTitle) {
+        const storedColumns = JSON.parse(localStorage.getItem("columns")) || [];
+        const column = storedColumns.find(col => col.title === columnTitle);
+        if (column) {
+            column.cards = column.cards.filter(card => card.cardTitle !== cardObj.cardTitle);
+            localStorage.setItem("columns", JSON.stringify(storedColumns));
+        }
+    }
+
+    function saveCardToLocalStorage(card, columnTitle) {
+        const storedColumns = JSON.parse(localStorage.getItem("columns")) || [];
+
+        const column = storedColumns.find(col => col.title === columnTitle);
+        if (column) {
+            const existingCardIndex = column.cards.findIndex(c => c.cardTitle === card.cardTitle);
+            if (existingCardIndex !== -1) {
+                column.cards[existingCardIndex] = card;
+            } else {
+                column.cards.push(card);
+            }
+        } else {
+            storedColumns.push({
+                title: columnTitle,
+                cards: [card]
+            });
+        }
+        localStorage.setItem("columns", JSON.stringify(storedColumns));
+    }
+
+    function updateCardOrderInLocalStorage(columnTitle) {
+        const columnDiv = [...document.querySelectorAll(".taskColumn")].find(col =>
+            col.querySelector(".editableTitle").innerText.trim() === columnTitle
+        );
+
+        if (!columnDiv) return;
+
+        const cards = [...columnDiv.querySelectorAll(".card")].map(card => {
+            const title = card.querySelector("p").innerText.trim();
+            const details = card.getAttribute("data-details");
+            return { cardTitle: title, cardDetails: details };
+        });
+
+        const storedColumns = JSON.parse(localStorage.getItem("columns")) || [];
+        const column = storedColumns.find(col => col.title === columnTitle);
+        if (column) {
+            column.cards = cards;
+            localStorage.setItem("columns", JSON.stringify(storedColumns));
+        }
+    }
+
+    function getCardDragAfterElement(container, yPosition) {
+        const draggableCards = [...container.querySelectorAll(".card:not(.dragging)")];
+        return draggableCards.reduce(
             (closest, child) => {
                 const box = child.getBoundingClientRect();
-                const offset = xPosition - (box.left + box.width / 2);
+                const offset = yPosition - (box.top + box.height / 2);
                 if (offset < 0 && offset > closest.offset) {
                     return { offset, element: child };
                 } else {
@@ -265,30 +283,132 @@ document.addEventListener("DOMContentLoaded", () => {
         ).element;
     }
 
-    // Load columns and cards on DOM ready
-    loadColumnsFromLocalStorage();
+    function addCardDragAndDropListeners(card) {
+        card.draggable = true;
 
-    // Show modal when Add Column button is clicked
+        card.addEventListener("dragstart", () => {
+            card.classList.add("dragging");
+
+            const columnDiv = card.closest(".taskColumn");
+            prevColumnTitle = columnDiv.querySelector(".editableTitle").innerText.trim();
+        });
+
+        card.addEventListener("dragend", () => {
+            card.classList.remove("dragging");
+        });
+    }
+
+    function loadColumnsFromLocalStorage() {
+        taskColumns.innerHTML = "";
+
+        const storedColumns = JSON.parse(localStorage.getItem("columns")) || [];
+        storedColumns.forEach(column => {
+            const columnDiv = createColumn(column.title);
+            column.cards.forEach(card => {
+                const cardDiv = createCard(card);
+                columnDiv.querySelector(".cardsContainer").appendChild(cardDiv);
+                addCardDragAndDropListeners(cardDiv);
+            });
+        });
+    }
+
     addColumnBtn.addEventListener("click", () => {
         modal.classList.remove("hidden");
         overlay.style.display = "block";
-        columnTitleInput.value = "";
     });
 
-    // Close modal
     closeModal.addEventListener("click", closeModalAndOverlay);
     overlay.addEventListener("click", closeModalAndOverlay);
-    closeCardEditBtn.addEventListener("click", closeModalAndOverlay);
 
-    // Add a new column when the submit button is clicked
     addColumnSubmit.addEventListener("click", () => {
-        const title = columnTitleInput.value.trim();
-        if (!title) {
-            alert("Title is required!");
-            columnTitleInput.focus();
+        const columnTitle = columnTitleInput.value.trim();
+        if (columnTitle) {
+            createColumn(columnTitle);
+            columnTitleInput.value = "";
+            closeModalAndOverlay();
+        } else {
+            alert("Column title cannot be empty!");
+        }
+    });
+
+    saveCardEditBtn.addEventListener("click", () => {
+        const updatedTitle = editCardTitleInput.value.trim();
+        const updatedDetails = quill.root.innerHTML.trim();
+        const dropdown = document.getElementById("assignPersonDropdown");
+        const assignedPerson = dropdown.value.trim();
+
+        if (assignedPerson) {
+            const assignedPersonDisplay = document.getElementById("assignedPersonDisplay");
+            assignedPersonDisplay.textContent = assignedPerson;
+            dropdown.style.display = "none";
+            assignedPersonDisplay.style.display = "block";
+        }
+        const textContent = updatedDetails.replace(/<[^>]*>/g, '').trim();
+
+        if (!updatedTitle || !textContent) {
+            alert("Both title and details are required!");
             return;
         }
-        createColumn(title);
+
+        if (currentCardElement && editColumnTitle) {
+            const storedColumns = JSON.parse(localStorage.getItem("columns")) || [];
+            const column = storedColumns.find(col => col.title === editColumnTitle);
+
+            if (column) {
+                const cardIndex = column.cards.findIndex(card =>
+                    card.cardTitle === currentCardElement.cardTitle &&
+                    card.cardDetails === currentCardElement.cardDetails &&
+                    card.assignedPerson === currentCardElement.assignedPerson
+                );
+
+                if (cardIndex !== -1) {
+                    column.cards[cardIndex].cardTitle = updatedTitle;
+                    column.cards[cardIndex].cardDetails = updatedDetails;
+                    column.cards[cardIndex].assignedPerson = assignedPerson;
+                    localStorage.setItem("columns", JSON.stringify(storedColumns));
+                    loadColumnsFromLocalStorage();
+                }
+            }
+        }
+
         closeModalAndOverlay();
     });
+
+    closeCardEditBtn.addEventListener("click", closeModalAndOverlay);
+    loadColumnsFromLocalStorage();
+    populateAssignPersonDropdown();
+
+    function initializePersonTable() {
+        const personTable = [
+            { id: 1, name: "Alice Johnson", email: "alice.johnson@example.com" },
+            { id: 2, name: "Bob Smith", email: "bob.smith@example.com" },
+            { id: 3, name: "Charlie Brown", email: "charlie.brown@example.com" },
+            { id: 4, name: "Diana Prince", email: "diana.prince@example.com" },
+            { id: 5, name: "Edward King", email: "edward.king@example.com" },
+            { id: 6, name: "Fiona White", email: "fiona.white@example.com" },
+            { id: 7, name: "George Harris", email: "george.harris@example.com" },
+            { id: 8, name: "Hannah Lee", email: "hannah.lee@example.com" },
+            { id: 9, name: "Ian Scott", email: "ian.scott@example.com" },
+            { id: 10, name: "Julia Adams", email: "julia.adams@example.com" },
+        ];
+        localStorage.setItem("personTable", JSON.stringify(personTable));
+    }
+
+    function populateAssignPersonDropdown() {
+        const dropdown = document.getElementById("assignPersonDropdown");
+        dropdown.innerHTML = '<option value="">-- Select a Person --</option>';
+
+        const persons = JSON.parse(localStorage.getItem("personTable")) || [];
+
+        persons.forEach(person => {
+            const option = document.createElement("option");
+            option.value = person.name;
+            option.textContent = person.name;
+            dropdown.appendChild(option);
+        });
+    }
+
+    if (!localStorage.getItem("personTable")) {
+        initializePersonTable();
+    }
 });
